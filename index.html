@@ -482,16 +482,14 @@ EDUCATION & SKILLS:
           matchScore,
           improvementsText
         };
-
         try {
-          const response = await fetch('http://localhost:5000/api/save-candidate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          });
-
+  const response = await fetch('/api/save-candidate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
           const result = await response.json();
 
           if (result.success) {
@@ -507,10 +505,11 @@ EDUCATION & SKILLS:
           }
         } catch (error) {
           console.warn("Backend server connection failed:", error);
-          setDbSaveStatus({ 
-            type: 'error', 
-            message: "Could not connect to backend server at http://localhost:5000. Please ensure 'node server.js' is running." 
-          });
+         // BEFORE (Lines 508-512):
+         setDbSaveStatus({
+  type: 'error',
+  message: "Could not connect to the server. Please try again later."
+});
         } finally {
           setIsSavingDb(false);
         }
