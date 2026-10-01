@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TalentPulse AI - HR & Resume Screener Portal</title>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: { 950: '#022c22' },
+            purple: { 950: '#2e1065' }
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #faf5ff;
+      color: #0f172a;
+    }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Custom Purple/Pink Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f3e8ff; }
+    ::-webkit-scrollbar-thumb { background: #d8b4fe; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #c084fc; }
+
+    .glow-purple { box-shadow: 0 4px 20px -2px rgba(168, 85, 247, 0.3); }
+    .glow-pink   { box-shadow: 0 4px 20px -2px rgba(236, 72, 153, 0.3); }
+    .bg-gradient-purple-pink { background: linear-gradient(135deg, #7e22ce 0%, #ec4899 100%); }
+    .bg-gradient-card { background: linear-gradient(135deg, #4c1d95 0%, #701a75 50%, #831843 100%); }
+
+    /* ── Opacity-variant backgrounds Tailwind CDN may not generate ─────── */
+    .bg-white\/10  { background-color: rgba(255,255,255,0.10) !important; }
+    .bg-white\/15  { background-color: rgba(255,255,255,0.15) !important; }
+    .bg-white\/20  { background-color: rgba(255,255,255,0.20) !important; }
+    .bg-purple-50\/30  { background-color: rgba(250,245,255,0.30) !important; }
+    .bg-purple-50\/40  { background-color: rgba(250,245,255,0.40) !important; }
+    .bg-purple-50\/50  { background-color: rgba(250,245,255,0.50) !important; }
+    .bg-purple-50\/70  { background-color: rgba(250,245,255,0.70) !important; }
+    .bg-purple-50\/80  { background-color: rgba(250,245,255,0.80) !important; }
+    .bg-pink-50\/60    { background-color: rgba(253,242,248,0.60) !important; }
+    .bg-purple-900\/80 { background-color: rgba(88,28,135,0.80) !important; }
+    .bg-emerald-950\/80 { background-color: rgba(2,44,34,0.80) !important; }
+
+    /* ── Opacity-variant borders ─────────────────────────────────────── */
+    .border-white\/20      { border-color: rgba(255,255,255,0.20) !important; }
+    .border-pink-400\/30   { border-color: rgba(244,114,182,0.30) !important; }
+    .border-purple-700\/60 { border-color: rgba(109,40,217,0.60) !important; }
+
+    /* ── Opacity-variant text ────────────────────────────────────────── */
+    .text-purple-100\/90 { color: rgba(237,233,254,0.90) !important; }
+
+    /* ── Extended palette colors (not in Tailwind v3 base) ───────────── */
+    .bg-emerald-950 { background-color: #022c22 !important; }
+    .text-purple-950 { color: #2e1065 !important; }
+
+    /* ── Animation keyframes (ensure they work without Tailwind JIT) ─── */
+    @keyframes spin   { to { transform: rotate(360deg); } }
+    @keyframes ping   { 75%,100% { transform: scale(2); opacity: 0; } }
+    @keyframes pulse  { 50% { opacity: .5; } }
+    @keyframes bounce {
+      0%,100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(.8,0,1,1); }
+      50%      { transform: none;            animation-timing-function: cubic-bezier(0,0,.2,1); }
+    }
+    .animate-spin   { animation: spin   1s linear infinite; }
+    .animate-ping   { animation: ping   1s cubic-bezier(0,0,.2,1) infinite; }
+    .animate-pulse  { animation: pulse  2s cubic-bezier(.4,0,.6,1) infinite; }
+    .animate-bounce { animation: bounce 1s infinite; }
+
+    /* ── Loading splash while React mounts ───────────────────────────── */
+    #root:empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    #root:empty::after {
+      content: "⏳  Loading TalentPulse AI…";
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #7c3aed;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body class="text-slate-800 min-h-screen selection:bg-pink-500 selection:text-white" style="background-color:#faf5ff;">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Preset Jobs in System
+    const JOBS = [
+      {
+        id: "JOB-101",
+        title: "Senior Full-Stack Engineer",
+        department: "Engineering",
+        expRequired: 5,
+        skillsRequired: ["React", "Node.js", "SQL Server", "TypeScript", "REST API", "Docker", "GraphQL"],
+        salaryRange: "$120,000 - $150,000",
+        description: "Looking for a seasoned developer to architect React frontends and integrate backend APIs with high-volume data stores."
+      },
+      {
+        id: "JOB-102",
+        title: "AI / ML Solutions Engineer",
+        department: "AI Innovation Lab",
+        expRequired: 3,
+        skillsRequired: ["Python", "Gemini API", "PyTorch", "LLMs", "Vector DBs", "LangChain"],
+        salaryRange: "$135,000 - $165,000",
+        description: "Focuses on deploying LLM applications, multimodal vision extraction pipelines, and structured AI agent integrations into enterprise systems."
+      },
+      {
+        id: "JOB-103",
+        title: "Database Architect & Technical Lead",
+        department: "Infrastructure",
+        expRequired: 6,
+        skillsRequired: ["Database Architecture", "Performance Tuning", "Stored Procedures", "Indexing", "Cloud SQL", "Query Optimization"],
+        salaryRange: "$130,000 - $160,000",
+        description: "Lead architect to manage mission-critical data schemas, optimize slow queries, and maintain high availability."
+      }
+    ];
+
+    // Preset Sample Candidates with Gap & Upskilling Analytics
+    const SAMPLE_CANDIDATES = [
+      {
+        id: "CAND-801",
+        name: "Alex Rivera",
+        email: "alex.rivera@devmail.io",
+        title: "Full-Stack Software Engineer",
+        yearsExp: 6,
+        location: "Austin, TX",
+        targetJobId: "JOB-101",
+        matchScore: 92,
+        skillFitScore: 94,
+        expFitScore: 95,
+        eduFitScore: 88,
+        status: "Shortlisted",
+        extractedSkills: ["React", "Node.js", "TypeScript", "SQL Server", "Tailwind CSS", "REST API"],
+        missingSkills: ["Docker", "GraphQL"],
+        skillGaps: "Lacks production containerization (Docker) and GraphQL query optimization experience required for tier-1 service architecture.",
+        upskillRecommendations: [
+          "Master Docker container orchestration & deployment pipelines for Node backend",
+          "Learn GraphQL schema design and Apollo Client integration with React",
+          "Gain basic Kubernetes cluster monitoring skills"
+        ],
+        categorizedSkills: {
+          core: ["React", "TypeScript", "Node.js"],
+          databases: ["SQL Server"],
+          tools: ["REST API", "Tailwind CSS", "Git"]
+        },
+        education: "B.S. in Computer Science - University of Texas",
+        recommendation: "Alex is an exemplary full-stack developer with direct React alignment. Strong candidate for immediate interview once Docker basics are verified.",
+        rawResume: `ALEX RIVERA
+Full-Stack Software Engineer | Austin, TX | alex.rivera@devmail.io
+
+SUMMARY:
+6+ years building responsive SaaS applications using React, Node.js, and enterprise systems. Proven track record in API optimization.
+
+EXPERIENCE:
+Senior Developer @ CloudScale Tech (2021 - Present)
+- Engineered high-throughput REST APIs using Node.js, reducing response times by 35%.
+- Built responsive UI dashboards with React, TypeScript, and Tailwind CSS for 50k daily active users.
+
+EDUCATION & SKILLS:
+- B.S. Computer Science, UT Austin (2018)
+- Skills: React, Node.js, TypeScript, SQL Server, Tailwind CSS, REST API, Git.`
+      },
+      {
+        id: "CAND-802",
+        name: "Dr. Sophia Chen",
+        email: "sophia.chen@airesearch.org",
+        title: "AI Research & Systems Engineer",
+        yearsExp: 4,
+        location: "San Francisco, CA",
+        targetJobId: "JOB-102",
+        matchScore: 88,
+        skillFitScore: 85,
+        expFitScore: 90,
+        eduFitScore: 98,
+        status: "Under Review",
+        extractedSkills: ["Python", "Gemini API", "PyTorch", "LLMs", "FastAPI"],
+        missingSkills: ["LangChain", "Vector DBs"],
+        skillGaps: "Solid foundational PyTorch & Gemini experience, but lacks hands-on practice with LangChain agent orchestration and dedicated Vector Databases.",
+        upskillRecommendations: [
+          "Complete LangChain Agent & RAG workflow certification",
+          "Gain hands-on experience indexing embeddings in Vector Databases (Pinecone/Qdrant)",
+          "Practice hybrid search SQL + Vector retrieval techniques"
+        ],
+        categorizedSkills: {
+          core: ["Python", "Gemini API", "LLMs"],
+          mlFrameworks: ["PyTorch", "FastAPI"]
+        },
+        education: "Ph.D. in Artificial Intelligence - Stanford University",
+        recommendation: "Sophia brings deep academic research in multimodal LLMs and Python pipelines. Recommended for technical review if provided time to pick up LangChain orchestration.",
+        rawResume: `DR. SOPHIA CHEN
+AI Systems Specialist | San Francisco, CA | sophia.chen@airesearch.org
+
+SUMMARY:
+AI Engineer with 4 years building multimodal LLM applications, prompt engineering pipelines, and embedding search.
+
+EXPERIENCE:
+AI Solutions Engineer @ Nexus Intelligence (2022 - Present)
+- Built document parser utilizing Gemini API multimodal vision, processing 10k invoices daily.
+- Integrated FastAPI services for candidate matching.
+
+EDUCATION & SKILLS:
+- Ph.D. in AI, Stanford University
+- Skills: Python, Gemini API, PyTorch, LLMs, FastAPI, Pandas.`
+      },
+      {
+        id: "CAND-803",
+        name: "Marcus Vance",
+        email: "marcus.vance@dbarchitect.net",
+        title: "Principal Database Administrator",
+        yearsExp: 8,
+        location: "Chicago, IL",
+        targetJobId: "JOB-103",
+        matchScore: 96,
+        skillFitScore: 98,
+        expFitScore: 96,
+        eduFitScore: 92,
+        status: "Shortlisted",
+        extractedSkills: ["Database Architecture", "Performance Tuning", "Stored Procedures", "Indexing", "Query Optimization"],
+        missingSkills: ["Cloud SQL"],
+        skillGaps: "Minimal native cloud deployment background; predominantly on-premise infrastructure experience.",
+        upskillRecommendations: [
+          "Obtain Cloud Database Administrator Associate Certification",
+          "Practice managed cloud SQL elastic pool management and auto-scaling configurations"
+        ],
+        categorizedSkills: {
+          core: ["Database Architecture", "Stored Procedures"],
+          optimization: ["Performance Tuning", "Indexing", "Execution Plans"]
+        },
+        education: "B.S. in Information Systems - University of Illinois",
+        recommendation: "Marcus is an elite database engineer with master-level indexing capabilities. Highly recommended for immediate offer stage.",
+        rawResume: `MARCUS VANCE
+Principal Database Administrator | Chicago, IL | marcus.vance@dbarchitect.net
+
+SUMMARY:
+8 years specialized in high-availability database administration, performance tuning, indexing optimization, and stored procedure architecture.
+
+EXPERIENCE:
+Lead Database Architect @ Apex Financial (2019 - Present)
+- Managed production database instances with 99.99% uptime.
+- Redesigned slow-running stored procedures, reducing server CPU utilization by 42%.
+
+EDUCATION & SKILLS:
+- B.S. Information Systems, University of Illinois
+- Skills: Database Architecture, Performance Tuning, Stored Procedures, Indexing, Query Optimization.`
+      }
+    ];
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('screener');
+      const [selectedJob, setSelectedJob] = useState(JOBS[0]);
+      const [selectedCandidate, setSelectedCandidate] = useState(SAMPLE_CANDIDATES[0]);
+      const [candidatesList, setCandidatesList] = useState(SAMPLE_CANDIDATES);
+      const [customResumeText, setCustomResumeText] = useState(SAMPLE_CANDIDATES[0].rawResume);
+      const [isAnalyzing, setIsAnalyzing] = useState(false);
+      const [parsingResult, setParsingResult] = useState(null);
+      const [filterStatus, setFilterStatus] = useState('ALL');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [isSavingDb, setIsSavingDb] = useState(false);
+      const [dbSaveStatus, setDbSaveStatus] = useState(null);
+
+      useEffect(() => {
+        const timer = setTimeout(() => {
+          const lucideObj = window.lucide || (typeof lucide !== 'undefined' ? lucide : null);
+          if (lucideObj && typeof lucideObj.createIcons === 'function') {
+            lucideObj.createIcons();
+          }
+        }, 50);
+        return () => clearTimeout(timer);
+      }, [activeTab, isAnalyzing, parsingResult, selectedJob, filterStatus, searchQuery, isSavingDb, dbSaveStatus]);
+
+      // Helper function to evaluate any resume against the selected job
+      const evaluateResumeAgainstJob = (text, job) => {
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        const name = lines.length > 0 ? lines[0].replace(/[^a-zA-Z\s.-]/g, '').trim().substring(0, 40) : "Candidate";
+        
+        const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        const email = emailMatch ? emailMatch[0] : `applicant_${Math.floor(Math.random()*900 + 100)}@devmail.io`;
+        
+        const expMatch = text.match(/(\d+)\+?\s*years?/i);
+        const yearsExperience = expMatch ? parseInt(expMatch[1], 10) : 4;
+
+        // Comprehensive tech vocabulary for extraction
+        const commonSkills = [
+          "React", "Node.js", "TypeScript", "JavaScript", "Python", "SQL Server", "Docker", "GraphQL", 
+          "REST API", "Tailwind CSS", "Gemini API", "PyTorch", "LLMs", "Vector DBs", "LangChain", 
+          "FastAPI", "Pandas", "Database Architecture", "Performance Tuning", "Stored Procedures", 
+          "Indexing", "Query Optimization", "Cloud SQL", "AWS", "Kubernetes", "Git"
+        ];
+        
+        const foundSkillsSet = new Set();
+        commonSkills.forEach(skill => {
+          const regex = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+          if (regex.test(text)) {
+            foundSkillsSet.add(skill);
+          }
+        });
+        
+        // Ensure role-specific required skills are checked
+        (job.skillsRequired || []).forEach(skill => {
+          const regex = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+          if (regex.test(text)) {
+            foundSkillsSet.add(skill);
+          }
+        });
+        
+        const extractedSkills = Array.from(foundSkillsSet);
+        if (extractedSkills.length === 0) {
+          extractedSkills.push("Software Engineering", "REST API");
+        }
+        
+        const missingSkills = (job.skillsRequired || []).filter(
+          req => !extractedSkills.some(es => es.toLowerCase() === req.toLowerCase())
+        );
+        const matchedSkills = (job.skillsRequired || []).filter(
+          req => extractedSkills.some(es => es.toLowerCase() === req.toLowerCase())
+        );
+        
+        const totalReq = (job.skillsRequired && job.skillsRequired.length) || 1;
+        const skillFitScore = Math.min(100, Math.max(30, Math.round((matchedSkills.length / totalReq) * 100)));
+        const expFitScore = Math.min(100, Math.max(45, Math.round((yearsExperience / (job.expRequired || 3)) * 88)));
+        const eduFitScore = /ph\.?d/i.test(text) ? 98 : /m\.?s|master/i.test(text) ? 92 : 88;
+        const overallMatchScore = Math.min(100, Math.round((skillFitScore * 0.55) + (expFitScore * 0.3) + (eduFitScore * 0.15)));
+        
+        const skillGaps = missingSkills.length > 0 
+          ? `Lacks direct hands-on experience in key role requirements: ${missingSkills.join(', ')}. Enterprise exposure needed.`
+          : `Strong technical match with all required proficiencies verified for ${job.title}.`;
+          
+        const upskillRecommendations = missingSkills.length > 0 
+          ? missingSkills.map(ms => `Master enterprise ${ms} concepts, architecture, and production workflows`)
+          : [
+              `Expand into system reliability and performance benchmarking for ${job.title}`,
+              `Lead code reviews and contribute to cross-functional engineering standards`
+            ];
+            
+        return {
+          candidateName: name || "Custom Candidate",
+          email,
+          currentTitle: lines[1] ? lines[1].substring(0, 50) : "Software Engineer",
+          yearsExperience,
+          location: "Remote / USA",
+          education: /ph\.?d/i.test(text) ? "Ph.D. in Computer Science" : /m\.?s|master/i.test(text) ? "M.S. in Computer Science" : "B.S. in Computer Science",
+          extractedSkills,
+          missingSkills,
+          skillGaps,
+          upskillRecommendations,
+          categorizedSkills: {
+            core: extractedSkills.slice(0, 3),
+            tools: extractedSkills.slice(3)
+          },
+          overallMatchScore,
+          skillFitScore,
+          expFitScore,
+          eduFitScore,
+          recommendation: overallMatchScore >= 85 
+            ? `${name || 'Candidate'} aligns well with ${job.title} (${overallMatchScore}% match). Recommend for direct interview.`
+            : `${name || 'Candidate'} has a solid foundation (${overallMatchScore}% match), but requires upskilling in ${missingSkills.slice(0, 2).join(' & ')}.`
+        };
+      };
+
+      // Execute AI Resume Screening & Gap Analysis for preset candidates
+      const handleRunAiScreening = (cand = selectedCandidate, job = selectedJob) => {
+        setIsAnalyzing(true);
+        setParsingResult(null);
+        setDbSaveStatus(null);
+
+        setTimeout(() => {
+          setIsAnalyzing(false);
+          const currentJob = job || selectedJob;
+          const currentCand = cand || selectedCandidate;
+
+          let evaluation;
+          if (currentCand.targetJobId === currentJob.id) {
+            evaluation = {
+              candidateName: currentCand.name,
+              email: currentCand.email,
+              currentTitle: currentCand.title,
+              yearsExperience: currentCand.yearsExp,
+              location: currentCand.location,
+              education: currentCand.education,
+              extractedSkills: currentCand.extractedSkills || [],
+              missingSkills: currentCand.missingSkills || [],
+              skillGaps: currentCand.skillGaps || "Profile gap analysis completed.",
+              upskillRecommendations: currentCand.upskillRecommendations || [],
+              categorizedSkills: currentCand.categorizedSkills || { core: (currentCand.extractedSkills || []).slice(0, 3) },
+              overallMatchScore: currentCand.matchScore,
+              skillFitScore: currentCand.skillFitScore,
+              expFitScore: currentCand.expFitScore,
+              eduFitScore: currentCand.eduFitScore,
+              recommendation: currentCand.recommendation
+            };
+          } else {
+            evaluation = evaluateResumeAgainstJob(currentCand.rawResume || (currentCand.extractedSkills || []).join(', '), currentJob);
+            evaluation.candidateName = currentCand.name;
+            evaluation.email = currentCand.email;
+            evaluation.currentTitle = currentCand.title;
+            evaluation.yearsExperience = currentCand.yearsExp;
+            evaluation.location = currentCand.location;
+            evaluation.education = currentCand.education;
+          }
+
+          setParsingResult(evaluation);
+        }, 800);
+      };
+
+      // Custom Resume Parser
+      const handleParseCustomResume = () => {
+        if (!customResumeText.trim()) return;
+        setIsAnalyzing(true);
+        setParsingResult(null);
+        setDbSaveStatus(null);
+
+        setTimeout(() => {
+          setIsAnalyzing(false);
+          const customParsed = evaluateResumeAgainstJob(customResumeText, selectedJob);
+          setParsingResult(customParsed);
+
+          const newCand = {
+            id: `CAND-${Math.floor(Math.random() * 100 + 850)}`,
+            name: customParsed.candidateName,
+            email: customParsed.email,
+            title: customParsed.currentTitle,
+            yearsExp: customParsed.yearsExperience,
+            location: customParsed.location,
+            targetJobId: selectedJob.id,
+            matchScore: customParsed.overallMatchScore,
+            skillFitScore: customParsed.skillFitScore,
+            expFitScore: customParsed.expFitScore,
+            eduFitScore: customParsed.eduFitScore,
+            status: customParsed.overallMatchScore >= 85 ? "Shortlisted" : "Under Review",
+            extractedSkills: customParsed.extractedSkills,
+            missingSkills: customParsed.missingSkills,
+            skillGaps: customParsed.skillGaps,
+            upskillRecommendations: customParsed.upskillRecommendations,
+            categorizedSkills: customParsed.categorizedSkills,
+            education: customParsed.education,
+            recommendation: customParsed.recommendation,
+            rawResume: customResumeText
+          };
+
+          setCandidatesList(prev => [newCand, ...prev]);
+        }, 900);
+      };
+
+      // Save Candidate to MS SQL Database via server.js API
+      const saveCandidateToDb = async (candidateData) => {
+        if (!candidateData) return;
+        setIsSavingDb(true);
+        setDbSaveStatus({ type: 'loading', message: 'Saving candidate to MS SQL Database...' });
+
+        const fullName = candidateData.candidateName || candidateData.name || "Candidate";
+        const email = candidateData.email || "candidate@email.com";
+        const targetPosition = (selectedJob && selectedJob.title) || candidateData.targetPosition || "Software Engineer";
+        const matchScore = Number(candidateData.overallMatchScore ?? candidateData.matchScore ?? 80);
+        const improvementsText = candidateData.skillGaps || 
+          (candidateData.upskillRecommendations && candidateData.upskillRecommendations.length > 0 
+            ? candidateData.upskillRecommendations.join("; ") 
+            : "Screened and evaluated by TalentPulse AI");
+
+        const payload = {
+          fullName,
+          email,
+          targetPosition,
+          matchScore,
+          improvementsText
+        };
+
+        try {
+          const response = await fetch('http://localhost:5000/api/save-candidate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            setDbSaveStatus({ 
+              type: 'success', 
+              message: `Candidate "${fullName}" successfully recorded in MS SQL Database!` 
+            });
+          } else {
+            setDbSaveStatus({ 
+              type: 'error', 
+              message: "Database error: " + (result.error || "Failed to insert into CandidateLedger table.") 
+            });
+          }
+        } catch (error) {
+          console.warn("Backend server connection failed:", error);
+          setDbSaveStatus({ 
+            type: 'error', 
+            message: "Could not connect to backend server at http://localhost:5000. Please ensure 'node server.js' is running." 
+          });
+        } finally {
+          setIsSavingDb(false);
+        }
+      };
+
+      const filteredCandidates = candidatesList.filter(c => {
+        const matchesStatus = filterStatus === 'ALL' || c.status === filterStatus;
+        const matchesSearch = (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              (c.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (c.extractedSkills || []).some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+        return matchesStatus && matchesSearch;
+      });
+
+      return (
+        <div className="flex flex-col min-h-screen bg-purple-50/40 text-slate-800">
+          
+          {/* HR Header Navigation Bar */}
+          <header className="border-b border-purple-100 bg-white sticky top-0 z-50 shadow-sm">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+              
+              {/* Brand Logo & Title */}
+              <div className="flex items-center gap-3">
+                <div className="bg-gradient-purple-pink p-2.5 rounded-xl text-white shadow-md glow-pink">
+                  <i data-lucide="user-check" className="w-6 h-6"></i>
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-xl text-slate-900 tracking-tight flex items-center gap-2">
+                    TalentPulse <span className="text-xs bg-pink-50 text-pink-700 border border-pink-200 font-bold px-2.5 py-0.5 rounded-md">HR Screener</span>
+                  </h1>
+                  <p className="text-xs text-purple-600 font-medium">AI Resume Matcher & Profile Gap Screener</p>
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <nav className="flex items-center bg-purple-50 p-1.5 rounded-xl border border-purple-200 text-xs font-semibold">
+                <button
+                  onClick={() => setActiveTab('screener')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'screener' ? 'bg-gradient-purple-pink text-white shadow-md glow-purple' : 'text-slate-600 hover:text-purple-900'}`}
+                >
+                  <i data-lucide="sparkles" className="w-4 h-4"></i> AI Resume Screener
+                </button>
+                <button
+                  onClick={() => setActiveTab('pipeline')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'pipeline' ? 'bg-gradient-purple-pink text-white shadow-md glow-purple' : 'text-slate-600 hover:text-purple-900'}`}
+                >
+                  <i data-lucide="users" className="w-4 h-4"></i> Candidate Ledger & Recommendations
+                </button>
+              </nav>
+
+              {/* Status Badge */}
+              <div className="hidden lg:flex items-center gap-2 text-xs text-pink-700 bg-pink-50 px-3.5 py-1.5 rounded-lg border border-pink-200 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
+                <span>Gemini HR Intelligence Active</span>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+            
+            {activeTab === 'screener' && (
+              <div className="space-y-6">
+                
+                {/* Top Banner Widget */}
+                <div className="bg-white border border-purple-100 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                      <span className="text-xs font-bold text-pink-600 bg-pink-50 border border-pink-100 px-3 py-1 rounded-full uppercase tracking-wider">
+                        Profile Gap & Skill Analysis Portal
+                      </span>
+                      <h2 className="text-2xl font-bold text-slate-900 mt-2 flex items-center gap-2">
+                        <i data-lucide="search" className="w-6 h-6 text-purple-600"></i> AI Candidate Screener & Improvement Engine
+                      </h2>
+                      <p className="text-xs text-slate-600 mt-1 max-w-3xl leading-relaxed">
+                        Evaluates candidate resumes against open roles. Automatically highlights <strong>Missing Profile Skills</strong>, provides <strong>Selection Action Items</strong>, and gives a deep breakdown of candidate capabilities for HR decision-making.
+                      </p>
+                    </div>
+
+                    {/* Job Selection Dropdown */}
+                    <div className="flex items-center gap-2 bg-purple-50/80 p-3 rounded-xl border border-purple-200 shrink-0">
+                      <span className="text-xs font-bold text-purple-900">Target Role:</span>
+                      <select 
+                        value={selectedJob.id}
+                        onChange={(e) => {
+                          const job = JOBS.find(j => j.id === e.target.value) || JOBS[0];
+                          setSelectedJob(job);
+                          if (parsingResult) {
+                            handleRunAiScreening(selectedCandidate, job);
+                          }
+                        }}
+                        className="bg-white text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg border border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+                      >
+                        {JOBS.map(j => (
+                          <option key={j.id} value={j.id}>{j.id}: {j.title}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Target Role Job Details Card */}
+                <div className="bg-gradient-card text-white rounded-2xl p-5 shadow-md">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-purple-700/60">
+                    <div className="flex items-center gap-3">
+                      <span className="bg-white/10 text-pink-200 text-xs font-mono font-bold px-3 py-1 rounded-md border border-white/20">
+                        {selectedJob.id}
+                      </span>
+                      <h3 className="font-bold text-lg text-white">{selectedJob.title}</h3>
+                      <span className="text-xs bg-purple-900/80 text-pink-200 px-2.5 py-0.5 rounded-md border border-pink-400/30">
+                        {selectedJob.department}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-emerald-300 bg-emerald-950/80 px-3 py-1 rounded-lg border border-emerald-700">
+                      Salary: {selectedJob.salaryRange}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-purple-100/90 mb-3 leading-relaxed">{selectedJob.description}</p>
+                  
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-pink-200 mr-1">Required Role Skills:</span>
+                    {(selectedJob.skillsRequired || []).map((sk, idx) => (
+                      <span key={idx} className="bg-white/15 text-white text-xs font-mono px-2.5 py-0.5 rounded-md border border-white/20">
+                        {sk}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Main Two-Column Interactive Workspace */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  
+                  {/* Left Column: Candidate Preset & Resume Input */}
+                  <div className="bg-white border border-purple-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-purple-50">
+                        <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                          <i data-lucide="file-text" className="w-4 h-4 text-purple-600"></i> Candidate Selection & Resume Input
+                        </h3>
+                        <span className="text-xs text-purple-600 font-mono">HR Stream</span>
+                      </div>
+
+                      {/* Candidate Presets */}
+                      <div className="space-y-2 mb-4">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">Choose Applicant Preset:</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          {SAMPLE_CANDIDATES.map((cand) => (
+                            <button
+                              key={cand.id}
+                              onClick={() => {
+                                setSelectedCandidate(cand);
+                                setCustomResumeText(cand.rawResume);
+                                handleRunAiScreening(cand, selectedJob);
+                              }}
+                              className={`p-3 rounded-xl border text-left transition-all text-xs ${selectedCandidate.id === cand.id ? 'bg-purple-50 border-purple-400 text-purple-900 font-semibold shadow-sm' : 'bg-slate-50 border-purple-100 text-slate-600 hover:border-purple-300'}`}
+                            >
+                              <div className="font-bold text-slate-900 truncate">{cand.name}</div>
+                              <div className="text-[11px] text-purple-600 font-mono mt-0.5">{cand.yearsExp} Yrs Exp</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Raw Resume Input */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Raw Resume Text View:</label>
+                          <button 
+                            onClick={() => setCustomResumeText(selectedCandidate ? selectedCandidate.rawResume : '')}
+                            className="text-xs text-pink-600 hover:text-pink-800 font-semibold underline"
+                          >
+                            Reset to Selected Preset
+                          </button>
+                        </div>
+                        <textarea
+                          rows={8}
+                          value={customResumeText}
+                          onChange={(e) => setCustomResumeText(e.target.value)}
+                          placeholder="Paste custom candidate resume text here..."
+                          className="w-full bg-purple-50/30 border border-purple-200 rounded-xl p-3 font-mono text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 leading-relaxed"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (customResumeText.trim() && (!selectedCandidate || customResumeText.trim() !== selectedCandidate.rawResume.trim())) {
+                          handleParseCustomResume();
+                        } else {
+                          handleRunAiScreening(selectedCandidate, selectedJob);
+                        }
+                      }}
+                      disabled={isAnalyzing}
+                      className="w-full bg-gradient-purple-pink hover:opacity-95 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition shadow-md glow-pink text-sm"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <i data-lucide="loader-2" className="w-4 h-4 animate-spin"></i>
+                          <span>Gemini Parsing Resume & Skill Gaps...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i data-lucide="sparkles" className="w-4 h-4"></i>
+                          <span>Run AI Screening & Profile Gap Analysis</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Right Column: AI Scorecard + Gap Analysis + Upskilling */}
+                  <div className="bg-white border border-purple-100 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between pb-3 mb-4 border-b border-purple-50">
+                        <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                          <i data-lucide="award" className="w-4 h-4 text-pink-600"></i> Gemini AI Evaluation & Gap Analysis
+                        </h3>
+                        <span className="text-xs text-pink-700 font-bold bg-pink-50 px-2.5 py-1 rounded-md border border-pink-200">
+                          HR Report Ready
+                        </span>
+                      </div>
+
+                      {/* Database Save Status Feedback Notification */}
+                      {dbSaveStatus && (
+                        <div className={`mb-4 p-3 rounded-xl border text-xs flex items-center justify-between gap-2 ${
+                          dbSaveStatus.type === 'success' 
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                            : dbSaveStatus.type === 'loading'
+                            ? 'bg-purple-50 border-purple-200 text-purple-800'
+                            : 'bg-amber-50 border-amber-200 text-amber-900'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <i data-lucide={dbSaveStatus.type === 'success' ? 'check-circle-2' : dbSaveStatus.type === 'loading' ? 'loader-2' : 'alert-triangle'} className={`w-4 h-4 shrink-0 ${dbSaveStatus.type === 'loading' ? 'animate-spin' : ''}`}></i>
+                            <span>{dbSaveStatus.message}</span>
+                          </div>
+                          <button 
+                            onClick={() => setDbSaveStatus(null)} 
+                            className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+
+                      {isAnalyzing ? (
+                        <div className="flex flex-col items-center justify-center h-72 text-slate-500 space-y-3">
+                          <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+                          <p className="text-xs font-semibold animate-pulse text-purple-700">Calculating match scores & detecting profile gaps for {selectedJob.id}...</p>
+                        </div>
+                      ) : parsingResult ? (
+                        <div className="space-y-4">
+
+                          {/* Candidate Identity & MS SQL Save Action Bar */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-purple-50/70 p-3 rounded-xl border border-purple-100 gap-2">
+                            <div>
+                              <div className="font-bold text-slate-900 text-sm">{parsingResult.candidateName}</div>
+                              <div className="text-xs text-purple-700 font-mono">{parsingResult.email} &bull; {parsingResult.currentTitle}</div>
+                            </div>
+                            <button
+                              onClick={() => saveCandidateToDb(parsingResult)}
+                              disabled={isSavingDb}
+                              className="bg-gradient-purple-pink hover:opacity-90 text-white font-bold text-xs px-3.5 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition disabled:opacity-50 shrink-0"
+                            >
+                              {isSavingDb ? (
+                                <>
+                                  <i data-lucide="loader-2" className="w-3.5 h-3.5 animate-spin"></i>
+                                  <span>Saving to MS SQL...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <i data-lucide="database" className="w-3.5 h-3.5"></i>
+                                  <span>Save to MS SQL Database</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          
+                          {/* Score Metric Cards */}
+                          <div className="grid grid-cols-4 gap-2 bg-purple-50/50 p-3 rounded-xl border border-purple-100 text-center">
+                            <div>
+                              <div className="text-[10px] text-purple-700 font-bold uppercase">Overall Fit</div>
+                              <div className="text-lg font-extrabold text-purple-700 font-mono">{parsingResult.overallMatchScore}%</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-purple-700 font-bold uppercase">Skill Match</div>
+                              <div className="text-lg font-extrabold text-pink-600 font-mono">{parsingResult.skillFitScore}%</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-purple-700 font-bold uppercase">Experience</div>
+                              <div className="text-lg font-extrabold text-pink-600 font-mono">{parsingResult.expFitScore}%</div>
+                            </div>
+                            <div>
+                              <div className="text-[10px] text-purple-700 font-bold uppercase">Education</div>
+                              <div className="text-lg font-extrabold text-pink-600 font-mono">{parsingResult.eduFitScore}%</div>
+                            </div>
+                          </div>
+
+                          {/* Specific Skill Breakdown */}
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 uppercase block mb-1.5 flex items-center gap-1">
+                              <i data-lucide="check-circle-2" className="w-3.5 h-3.5 text-emerald-600"></i> Matched Specific Candidate Skills:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {(parsingResult.extractedSkills || []).map((sk, idx) => (
+                                <span key={idx} className="bg-purple-50 text-purple-800 text-xs px-2.5 py-0.5 rounded-md font-mono border border-purple-200 font-semibold">
+                                  {sk} ✓
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* PROFILE GAP ANALYSIS: What is Missing in this Profile */}
+                          <div className="bg-rose-50 border border-rose-200 p-3.5 rounded-xl space-y-2">
+                            <div className="text-xs font-bold text-rose-800 flex items-center gap-1.5">
+                              <i data-lucide="alert-triangle" className="w-4 h-4 text-rose-600"></i> Profile Gap Analysis (Missing Skills):
+                            </div>
+                            <p className="text-xs text-rose-900 leading-relaxed">
+                              {parsingResult.skillGaps}
+                            </p>
+
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              <span className="text-[11px] font-bold text-rose-700 self-center">Missing Target Skills:</span>
+                              {(parsingResult.missingSkills || []).map((ms, idx) => (
+                                <span key={idx} className="bg-rose-100 text-rose-800 text-xs px-2 py-0.5 rounded font-mono font-bold border border-rose-300">
+                                  ✕ {ms}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* SELECTION SHORTLIST & UPSKILLING RECOMMENDATIONS */}
+                          <div className="bg-purple-50 border border-purple-200 p-3.5 rounded-xl space-y-2">
+                            <div className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                              <i data-lucide="trending-up" className="w-4 h-4 text-pink-600"></i> How Candidate Can Improve for Candidate Ledger:
+                            </div>
+                            <ul className="space-y-1 text-xs text-purple-950 list-disc list-inside leading-relaxed font-medium">
+                              {(parsingResult.upskillRecommendations || []).map((rec, idx) => (
+                                <li key={idx}>{rec}</li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {/* Gemini Recommendation */}
+                          <div className="p-3 bg-pink-50/60 border border-pink-200 rounded-xl">
+                            <div className="text-xs font-bold text-purple-900 mb-1 flex items-center gap-1.5">
+                              <i data-lucide="message-square" className="w-3.5 h-3.5 text-pink-600"></i> Gemini HR Recommendation:
+                            </div>
+                            <p className="text-xs text-slate-700 italic">"{parsingResult.recommendation}"</p>
+                          </div>
+
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-72 text-slate-400 text-xs text-center p-6 space-y-2">
+                          <i data-lucide="sparkles" className="w-8 h-8 text-pink-400 animate-bounce"></i>
+                          <p>Click "Run AI Screening & Profile Gap Analysis" to parse candidate missing skills and upskilling advice.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+
+            {/* Candidate Ledger & Improvement Steps Tab */}
+            {activeTab === 'pipeline' && (
+              <div className="space-y-6">
+                
+                <div className="bg-white border border-purple-100 rounded-2xl p-6 shadow-sm">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
+                        <i data-lucide="table" className="w-5 h-5 text-purple-600"></i> Candidate Applications Ledger & Improvement Steps
+                      </h3>
+                      <p className="text-xs text-slate-500">Recorded applications stored with Full Name, Email, Position Scores, and Actionable Improvement recommendations.</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input 
+                        type="text"
+                        placeholder="Search name, email, or skills..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-purple-50/40 border border-purple-200 text-xs text-slate-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+
+                      <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="bg-purple-50/40 text-xs font-bold text-purple-900 px-3 py-1.5 rounded-lg border border-purple-200 focus:outline-none"
+                      >
+                        <option value="ALL">All Statuses</option>
+                        <option value="Shortlisted">Shortlisted</option>
+                        <option value="Under Review">Under Review</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Database Save Status Feedback Notification */}
+                  {dbSaveStatus && (
+                    <div className={`mb-4 p-3 rounded-xl border text-xs flex items-center justify-between gap-2 ${
+                      dbSaveStatus.type === 'success' 
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                        : dbSaveStatus.type === 'loading'
+                        ? 'bg-purple-50 border-purple-200 text-purple-800'
+                        : 'bg-amber-50 border-amber-200 text-amber-900'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <i data-lucide={dbSaveStatus.type === 'success' ? 'check-circle-2' : dbSaveStatus.type === 'loading' ? 'loader-2' : 'alert-triangle'} className={`w-4 h-4 shrink-0 ${dbSaveStatus.type === 'loading' ? 'animate-spin' : ''}`}></i>
+                        <span>{dbSaveStatus.message}</span>
+                      </div>
+                      <button 
+                        onClick={() => setDbSaveStatus(null)} 
+                        className="text-slate-400 hover:text-slate-600 text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-700">
+                      <thead className="bg-purple-50/80 text-[11px] text-purple-900 uppercase font-mono border-b border-purple-200">
+                        <tr>
+                          <th className="p-3">Candidate (Name & Email)</th>
+                          <th className="p-3">Position</th>
+                          <th className="p-3">Score</th>
+                          <th className="p-3">Skill Breakdown</th>
+                          <th className="p-3">Missing Skills</th>
+                          <th className="p-3">How They Can Improve</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-purple-100 font-mono">
+                        {filteredCandidates.map((c) => (
+                          <tr key={c.id} className="hover:bg-purple-50/30 transition">
+                            <td className="p-3">
+                              <div className="font-bold text-slate-900 font-sans text-sm">{c.name}</div>
+                              <div className="text-[11px] text-purple-700 font-mono">{c.email}</div>
+                              <div className="text-[10px] text-slate-400 font-sans mt-0.5">{c.location}</div>
+                            </td>
+                            <td className="p-3">
+                              <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded border border-purple-200 font-bold text-[11px]">
+                                {c.targetJobId}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <div className="text-purple-700 font-extrabold text-base">{c.matchScore}%</div>
+                              <span className="text-[10px] text-slate-400 font-sans">Match Fit</span>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1 max-w-xs">
+                                {(c.extractedSkills || []).map((s, idx) => (
+                                  <span key={idx} className="bg-purple-50 text-purple-900 text-[10px] px-1.5 py-0.5 rounded border border-purple-200 font-medium">
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1">
+                                {(c.missingSkills || ["None"]).map((ms, idx) => (
+                                  <span key={idx} className="bg-rose-50 text-rose-700 text-[10px] px-1.5 py-0.5 rounded border border-rose-200 font-bold">
+                                    {ms}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-700 max-w-xs font-sans">
+                                {(c.upskillRecommendations || []).map((step, idx) => (
+                                  <li key={idx} className="leading-tight">{step}</li>
+                                ))}
+                              </ul>
+                            </td>
+                            <td className="p-3">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-sans font-bold ${c.status === 'Shortlisted' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-purple-100 text-purple-800 border border-purple-200'}`}>
+                                {c.status}
+                              </span>
+                            </td>
+                            <td className="p-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => {
+                                    setSelectedCandidate(c);
+                                    setCustomResumeText(c.rawResume || '');
+                                    handleRunAiScreening(c, selectedJob);
+                                    setActiveTab('screener');
+                                  }}
+                                  className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-sans font-bold text-[11px] px-2.5 py-1 rounded-md transition"
+                                  title="Open in AI Screener"
+                                >
+                                  Screen
+                                </button>
+                                <button
+                                  onClick={() => saveCandidateToDb(c)}
+                                  disabled={isSavingDb}
+                                  className="bg-pink-100 hover:bg-pink-200 text-pink-800 font-sans font-bold text-[11px] px-2.5 py-1 rounded-md transition flex items-center gap-1 disabled:opacity-50"
+                                  title="Save record to MS SQL Database"
+                                >
+                                  <i data-lucide="database" className="w-3 h-3"></i> SQL
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t border-purple-100 bg-white py-4 text-center text-xs text-purple-700 font-medium">
+            TalentPulse AI — HR Resume Matcher & Profile Gap Engine
+          </footer>
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

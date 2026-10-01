@@ -1,0 +1,24 @@
+{
+  "name": "hr-resume-screener",
+  "version": "1.0.0",
+  "description": "TalentPulse AI - Resume Screener & Candidate Ledger",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^5.2.1",
+    "msnodesqlv8": "^5.5.0",
+    "mssql": "^12.7.2"
+  },
+  "devDependencies": {
+    "@babel/parser": "^8.0.5"
+  }
+}
