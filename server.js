@@ -5,10 +5,8 @@ const path = require('path');
 
 // Determine database environment mode (Local Windows ODBC vs. Production Cloud SQL)
 const isLocal = !process.env.DB_SERVER || process.env.DB_SERVER === 'localhost' || process.env.DB_SERVER === '(local)';
-
-// Dynamically select driver based on environment
-const sql = isLocal ? require('mssql/msnodesqlv8') : require('mssql');
-
+// Load standard mssql driver for production/cloud environments
+const sql = require('mssql');
 const app = express();
 
 app.use(cors());
